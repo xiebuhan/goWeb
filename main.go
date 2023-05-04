@@ -6,7 +6,7 @@ import (
 )
 
 func handlefunc(w http.ResponseWriter, r *http.Request)  {
-
+	w.Header().Set("Content-Type","text/html;charset=utf-8")
 	fmt.Fprint(w,"请求路径为:" + r.URL.Path)
 	if r.URL.Path == "/"{
 		fmt.Fprint(w, "<h1>Hello, 这里是 goblog</h1>")
