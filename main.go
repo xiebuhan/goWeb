@@ -270,6 +270,16 @@ func removeTrailingSlash(next http.Handler) http.Handler {
 	})
 }
 
+//编辑文章
+func articlesEditHandler(w http.ResponseWriter,r *http.Request)  {
+	//获取url参数
+	vars := mux.Vars(r)
+	id := vars["id"]
+
+	//2 读取对应的文章数据
+
+}
+
 func main() {
 	initDB()
 	//createTables()
@@ -280,7 +290,8 @@ func main() {
 	router.HandleFunc("/articles", articlesIndexHandler).Methods("GET").Name("articles.index")
 	router.HandleFunc("/articles", articlesStoreHandler).Methods("POST").Name("articles.store")
 	router.HandleFunc("/articles/create",articlesCreateHandler).Methods("GET").Name("articles.create")
-
+	router.HandleFunc("/articles/{id:[0-9]+}/edit", articlesEditHandler).Methods("GET").Name("articles.edit")
+	router.HandleFunc("/articles/{id:[0-9]+}", articlesUpdateHandler).Methods("POST").Name("articles.update")
 
 	// 自定义 404 页面
 	router.NotFoundHandler = http.HandlerFunc(notFoundHandler)
