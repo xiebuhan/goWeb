@@ -123,23 +123,24 @@ func forceHTMLMiddleware(next http.Handler) http.Handler {
 }
 // 创建博文表单
 func articlesCreateHandler(w http.ResponseWriter,r *http.Request)  {
-	html := `
-		<!Document html>
-		<html lang="en">
-				<head>
-					<title>创建文章 ——— 我的技术博客</title>
-				</head>
-				<body>
-					<form action="%s" method="post">
-						<p><input type="text" name="title"></p>
-        				<p><textarea name="body" cols="30" rows="10"></textarea></p>
-        				<p><button type="submit">提交</button></p>
-					</form>
-				</body>
-		</html>
-`
 	StoreURL,_:=router.Get("articles.store").URL()
-	fmt.Fprintf(w,html,StoreURL)
+	data := ArticlesFormData{
+		Title:  "",
+		Body:   "",
+		URL:    StoreURL,
+		Errors: nil,
+	}
+
+	tmpl,err := template.ParseFiles("resources/views/articles/create.gohtml")
+	if err != nil {
+		panic(err)
+	}
+
+	err = tmpl.Execute(w,data)
+	if err != nil {
+		panic(err)
+	}
+
 
 }
 
