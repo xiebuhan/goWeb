@@ -8,26 +8,28 @@ import (
 	"log"
 	"net/http"
 	"net/url"
+	"strconv"
 	"strings"
 	"time"
 	"unicode/utf8"
 
 	"github.com/gorilla/mux"
 )
+var router = mux.NewRouter()
 var db *sql.DB
 
 func initDB()  {
 	var err error
 	config := mysql.Config{
-		User:                 "homestead",
-		Passwd:               "secret",
+		User:                 "root",
+		Passwd:               "root",
 		Addr:                 "127.0.0.1:3306",
 		Net:                  "tcp",
 		DBName:               "goblog",
 		AllowNativePasswords: true,
 	}
 	// 准备数据库连接池
-	db,err :=  sql.Open("mysql",config.FormatDSN())
+	db,err =  sql.Open("mysql",config.FormatDSN())
 	checkError(err)
 
 	// 设置最大连接数
@@ -49,6 +51,16 @@ func checkError(err error) {
 	}
 }
 
+//func createTables() {
+//	createArticlesSQL := `CREATE TABLE IF NOT EXISTS articles(
+//    id bigint(10) PRIMARY KEY AUTO_INCREMENT NOT NULL,
+//    title varchar(255) COLLATE utf8mb4_unicode_ci NOT NULL,
+//    body longtext COLLATE utf8mb4_unicode_ci
+//); `
+//
+//	_, err := db.Exec(createArticlesSQL)
+//	checkError(err)
+//}
 
 type ArticlesFormData struct {
 	Title, Body string
@@ -103,11 +115,14 @@ func articlesStoreHandler(w http.ResponseWriter, r *http.Request) {
 
 	// 检查是否有错误
 	if len(errors) == 0 {
-		fmt.Fprint(w,"验证通过<br/>")
-		fmt.Fprintf(w, "title 的值为: %v <br>", title)
-		fmt.Fprintf(w, "title 的长度为: %v <br>", utf8.RuneCountInString(title))
-		fmt.Fprintf(w, "body 的值为: %v <br>", body)
-		fmt.Fprintf(w, "body 的长度为: %v <br>", utf8.RuneCountInString(body))
+		lastInsertID, err := saveArticleToDB(title, body)
+		if lastInsertID > 0 {
+			fmt.Fprint(w, "插入成功，ID 为"+strconv.FormatInt(lastInsertID, 10))
+		} else {
+			checkError(err)
+			w.WriteHeader(http.StatusInternalServerError)
+			fmt.Fprint(w,  "500 服务器内部错误")
+		}
 	} else {
 		html := `
 <!DOCTYPE html>
@@ -153,6 +168,38 @@ func articlesStoreHandler(w http.ResponseWriter, r *http.Request) {
 
 }
 
+//保存文章
+func saveArticleToDB(title string,body string) (int64,error)  {
+	//变量初始化
+	var(
+		id int64
+		err error
+		rs sql.Result
+		stmt *sql.Stmt
+	)
+
+	stmt, err = db.Prepare("INSERT INTO articles (title, body) VALUES(?,?)")
+	// 例行的错误检测
+	if err != nil {
+		return 0, err
+	}
+
+	// 2. 在此函数运行结束后关闭此语句，防止占用 SQL 连接
+	defer stmt.Close()
+	// 3. 执行请求，传参进入绑定的内容
+	rs, err = stmt.Exec(title, body)
+	if err != nil {
+		return 0, err
+	}
+
+	// 4. 插入成功的话，会返回自增 ID
+	if id, err = rs.LastInsertId(); id > 0 {
+		return id, nil
+	}
+
+	return 0, err
+}
+
 func forceHTMLMiddleware(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		// 1. 设置标头
@@ -191,10 +238,10 @@ func removeTrailingSlash(next http.Handler) http.Handler {
 		next.ServeHTTP(w, r)
 	})
 }
-	var router = mux.NewRouter()
+
 func main() {
-
-
+	initDB()
+	//createTables()
 	router.HandleFunc("/", homeHandler).Methods("GET").Name("home")
 	router.HandleFunc("/about", aboutHandler).Methods("GET").Name("about")
 
@@ -215,6 +262,10 @@ func main() {
 	fmt.Println("homeURL: ", homeURL)
 	articleURL, _ := router.Get("articles.show").URL("id", "1")
 	fmt.Println("articleURL: ", articleURL)
+
+
+
+
 
 	http.ListenAndServe(":3000", removeTrailingSlash(router))
 }
