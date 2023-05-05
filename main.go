@@ -32,9 +32,19 @@ func articlesShowHandler(w http.ResponseWriter, r *http.Request) {
 func articlesIndexHandler(w http.ResponseWriter, r *http.Request) {
 	fmt.Fprint(w, "访问文章列表")
 }
-
+//接受文章表单的数据
 func articlesStoreHandler(w http.ResponseWriter, r *http.Request) {
-	fmt.Fprint(w, "创建新的文章")
+	err := r.ParseForm()
+	if err != nil{
+		// 解析错误，这里应该有错误处理
+		fmt.Fprint(w,"请提供正确的数据")
+		return
+	}
+	title := r.PostForm.Get("title")
+	fmt.Fprintf(w, "POST PostForm: %v <br>", r.PostForm)
+	fmt.Fprintf(w, "POST Form: %v <br>", r.Form)
+	fmt.Fprintf(w, "title 的值为: %v", title)
+
 }
 
 func forceHTMLMiddleware(next http.Handler) http.Handler {
@@ -54,11 +64,11 @@ func articlesCreateHandler(w http.ResponseWriter,r *http.Request)  {
 					<title>创建文章 ——— 我的技术博客</title>
 				</head>
 				<body>
-					<from action="%s" method="post">
+					<form action="%s" method="post">
 						<p><input type="text" name="title"></p>
         				<p><textarea name="body" cols="30" rows="10"></textarea></p>
         				<p><button type="submit">提交</button></p>
-					</from>
+					</form>
 				</body>
 		</html>
 `
