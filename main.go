@@ -118,7 +118,33 @@ func articlesShowHandler(w http.ResponseWriter, r *http.Request) {
 }
 
 func articlesIndexHandler(w http.ResponseWriter, r *http.Request) {
-	fmt.Fprint(w, "访问文章列表")
+	 // 1 执行查询语句，返回一个结果集
+	 rows,err := db.Query("select * from articles")
+
+	 checkError(err)
+
+	 defer rows.Close()
+
+	 var articles []Article
+	 // 2 循环读取结果
+	 for rows.Next() {
+	 	var article Article
+		 err := rows.Scan(&article.ID, &article.Title, &article.Body)
+		 checkError(err)
+		 // 将 article 追加到 articles数组中
+		 articles = append(articles,article)
+	 }
+	 //检测遍历时是否发生错误
+	 err = rows.Err()
+	 checkError(err)
+
+	 //加载模板
+	 tmpl,err := template.ParseFiles("resources/views/articles/index.gohtml")
+	 checkError(err)
+
+	 err = tmpl.Execute(w,articles)
+	 checkError(err)
+
 }
 //接受文章表单的数据
 func articlesStoreHandler(w http.ResponseWriter, r *http.Request) {
@@ -391,6 +417,15 @@ func ValidateArticleFormData(title string,body string) map[string]string{
 
 	return errors
 
+}
+
+func (a Article) Link()string  {
+	showUrl,err := router.Get("articles.show").URL("id",strconv.FormatInt(a.ID,10))
+	if err != nil {
+		checkError(err)
+		return  ""
+	}
+	return showUrl.String()
 }
 
 
