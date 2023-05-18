@@ -8,21 +8,6 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-func TestHomePage(t *testing.T)  {
-	baseRUL := "http://localhost:3000"
-
-	//请求一，模拟用户请求浏览器
-	var(
-		resp *http.Response
-		err error
-	)
-
-	resp,err = http.Get(baseRUL + "/about")
-	// 2 检测 ----- 是否无错误，且 200
-	assert.NoError(t,err,"有错误发生,err不为空")
-	assert.Equal(t, 200, resp.StatusCode, "应返回状态码 200")
-
-}
 
 func TestAllPages(t *testing.T)  {
 	baseURL := "http://localhost:3000"
